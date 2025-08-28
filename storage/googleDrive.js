@@ -6,7 +6,8 @@ const stream = require("stream");
 
 const REDIRECT_PATH = "/accounts/callback/google";
 const REDIRECT_URI = `${BASE_URL}${REDIRECT_PATH}`;
-const SCOPES = ["https://www.googleapis.com/auth/drive"];
+const SCOPES = ["https://www.googleapis.com/auth/drive", "https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"];
+
 
 function oauth2ClientFactory() {
     return new google.auth.OAuth2(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, REDIRECT_URI);
