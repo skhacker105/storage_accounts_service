@@ -31,16 +31,30 @@ module.exports = {
         return user ? user.accounts : [];
     },
 
+    async updateAccountForUser(userId, account) {
+        const user = users.find((u) => u.id === userId);
+        if (!user) throw new Error("User not found");
+        const idx = user.accounts.findIndex((a) => a.id === account.id);
+        if (idx >= 0) {
+            user.accounts[idx] = { ...account, userId };
+        } else {
+            user.accounts.push({ ...account, userId });
+        }
+    },
+
+    async getAccount(userId, accountId) {
+        const user = users.find((u) => u.id === userId);
+        if (!user) return null;
+        return user.accounts.find((a) => a.id === accountId) || null;
+    },
+
     async saveAccount(userId, account) {
-        console.log("current users = ", users);
-        console.log("current account = ", account);
-        console.log("current userId = ", userId);
         const user = users.find((u) => u.id === userId);
         if (!user) throw new Error("User not found");
 
         const idx = user.accounts.findIndex((a) => a.id === account.id);
         if (idx >= 0) user.accounts[idx] = account;
-        else user.accounts.push(account);
+        else user.accounts.push({ ...account, userId });
         return account;
     },
 

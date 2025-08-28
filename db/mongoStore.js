@@ -5,7 +5,6 @@ const logger = require("../utils/logger");
 
 let client = null;
 let db = null;
-// let accountsColl = null;
 let usersColl = null;
 
 async function init() {
@@ -47,13 +46,27 @@ async function listAccounts(userId) {
     return user ? user.accounts : [];
 }
 
+async function getAccount(userId, accountId) {
+    const user = await getUser(userId);
+    if (!user) return null;
+    return user.accounts.find((a) => a.id === accountId) || null;
+}
+
 async function saveAccount(userId, account) {
     await usersColl.updateOne(
         { id: userId },
         { $pull: { accounts: { id: account.id } } } // remove old
     );
-    await usersColl.updateOne({ id: userId }, { $push: { accounts: account } });
+    await usersColl.updateOne({ id: userId }, { $push: { accounts: { ...account, userId } } });
     return account;
+}
+
+async function updateAccountForUser(userId, account) {
+    await usersColl.updateOne(
+      { id: userId, "accounts.id": account.id },
+      { $set: { "accounts.$": { ...account, userId } } },
+      { upsert: true }
+    );
 }
 
 async function deleteAccount(userId, accountId) {
@@ -80,4 +93,6 @@ module.exports = {
   deleteAccount,
   restoreAll,
   close,
+  updateAccountForUser,
+  getAccount
 };

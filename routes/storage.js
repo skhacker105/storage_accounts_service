@@ -2,33 +2,29 @@ const express = require("express");
 const multer = require("multer");
 const store = require("../db");
 const { getProvider } = require("../storage");
-const stream = require("stream");
 const { authMiddleware } = require("../middleware/auth");
 
 const upload = multer({ storage: multer.memoryStorage() });
 const router = express.Router();
-router.use(authMiddleware);
+router.use(authMiddleware); // ✅ ensures req.user is set
 
 /**
  * Create file
  * POST /storage/:accountId/files
- * - multipart/form-data with 'file' to upload binary
- * - OR application/json with { name, mimeType, content } where content is utf-8 text
  */
 router.post("/:accountId/files", upload.single("file"), async (req, res) => {
     try {
-        const account = await store.getAccount(req.params.accountId);
+        const account = await store.getAccount(req.userId, req.params.accountId); // ✅ scoped to user
         if (!account) return res.status(404).json({ error: "Account not found" });
 
         const provider = getProvider(account.provider);
         if (!provider) return res.status(400).json({ error: "Provider not supported" });
 
         if (req.file) {
-            const buffer = req.file.buffer;
             const result = await provider.createFile(account, {
                 name: req.file.originalname,
                 mimeType: req.file.mimetype,
-                contentStream: buffer,
+                contentStream: req.file.buffer,
             });
             return res.json(result);
         } else {
@@ -47,11 +43,10 @@ router.post("/:accountId/files", upload.single("file"), async (req, res) => {
 /**
  * List files
  * GET /storage/:accountId/files
- * optional query: q (Drive q string), pageSize
  */
 router.get("/:accountId/files", async (req, res) => {
     try {
-        const account = await store.getAccount(req.params.accountId);
+        const account = await store.getAccount(req.userId, req.params.accountId);
         if (!account) return res.status(404).json({ error: "Account not found" });
         const provider = getProvider(account.provider);
         if (!provider) return res.status(400).json({ error: "Provider not supported" });
@@ -67,21 +62,18 @@ router.get("/:accountId/files", async (req, res) => {
 });
 
 /**
- * Get file metadata or download content
+ * Get file metadata or content
  * GET /storage/:accountId/files/:fileId
- * query ?alt=media to download file content (streams)
  */
 router.get("/:accountId/files/:fileId", async (req, res) => {
     try {
-        const account = await store.getAccount(req.params.accountId);
+        const account = await store.getAccount(req.userId, req.params.accountId);
         if (!account) return res.status(404).json({ error: "Account not found" });
         const provider = getProvider(account.provider);
         if (!provider) return res.status(400).json({ error: "Provider not supported" });
 
-        const { alt } = req.query;
-        if (alt === "media") {
+        if (req.query.alt === "media") {
             const fileStream = await provider.getFile(account, req.params.fileId, { alt: "media" });
-            // fileStream is a readable stream
             fileStream.on("error", (err) => {
                 console.error(err);
                 res.status(500).end();
@@ -98,14 +90,12 @@ router.get("/:accountId/files/:fileId", async (req, res) => {
 });
 
 /**
- * Update file metadata or content
+ * Update file
  * PATCH /storage/:accountId/files/:fileId
- * - multipart/form-data with 'file' to replace content
- * - OR application/json { name, mimeType, content }
  */
 router.patch("/:accountId/files/:fileId", upload.single("file"), async (req, res) => {
     try {
-        const account = await store.getAccount(req.params.accountId);
+        const account = await store.getAccount(req.userId, req.params.accountId);
         if (!account) return res.status(404).json({ error: "Account not found" });
         const provider = getProvider(account.provider);
         if (!provider) return res.status(400).json({ error: "Provider not supported" });
@@ -146,7 +136,7 @@ router.patch("/:accountId/files/:fileId", upload.single("file"), async (req, res
  */
 router.delete("/:accountId/files/:fileId", async (req, res) => {
     try {
-        const account = await store.getAccount(req.params.accountId);
+        const account = await store.getAccount(req.userId, req.params.accountId);
         if (!account) return res.status(404).json({ error: "Account not found" });
         const provider = getProvider(account.provider);
         if (!provider) return res.status(400).json({ error: "Provider not supported" });
@@ -165,7 +155,7 @@ router.delete("/:accountId/files/:fileId", async (req, res) => {
  */
 router.get("/:accountId/quota", async (req, res) => {
     try {
-        const account = await store.getAccount(req.params.accountId);
+        const account = await store.getAccount(req.userId, req.params.accountId);
         if (!account) return res.status(404).json({ error: "Account not found" });
         const provider = getProvider(account.provider);
         if (!provider) return res.status(400).json({ error: "Provider not supported" });

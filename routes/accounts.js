@@ -17,7 +17,6 @@ router.get("/add/:provider", authMiddleware, async (req, res) => {
     const provider = getProvider(providerName);
     if (!provider) return res.status(400).send(`Unknown provider: ${providerName}`);
 
-    console.log('\nreq.userId = ', req.userId)
     const state = JSON.stringify({
         csrf: uuidv4(),
         userId: req.userId, // comes from authMiddleware
@@ -25,7 +24,7 @@ router.get("/add/:provider", authMiddleware, async (req, res) => {
     const url = provider.getAuthUrl(state);
 
     const placeholder = {
-        id: state,
+        id: state.csrf,
         userId: req.userId,
         provider: providerName,
         status: "pending",
@@ -47,15 +46,13 @@ router.get("/callback/:provider", async (req, res) => {
       if (!provider) return res.status(400).send("Unknown provider");
   
       // state comes from Google redirect
-    console.log('\nreq.query.state = ', req.query)
       const stateObj = JSON.parse(req.query.state);
       const userId = stateObj.userId;
   
       const account = await provider.handleOAuthCallback(req.query);
-      console.log('stateObj.userId = ', stateObj.userId, userId)
-      await store.saveAccount(stateObj.userId, account);
+      await store.saveAccount(userId, account);
   
-      return res.send(`Account added for user=${userId}, account=${account.label}`);
+      return res.send(`Account added for user=${userId}, account=${account.label} with account id = ${account.id}`);
     } catch (e) {
       logger.error("OAuth callback error", e);
       return res.status(500).send("OAuth callback failed");

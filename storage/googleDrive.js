@@ -8,13 +8,14 @@ const REDIRECT_PATH = "/accounts/callback/google";
 const REDIRECT_URI = `${BASE_URL}${REDIRECT_PATH}`;
 const SCOPES = ["https://www.googleapis.com/auth/drive", "https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"];
 
-
 function oauth2ClientFactory() {
     return new google.auth.OAuth2(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, REDIRECT_URI);
 }
 
 async function getDriveForAccount(account) {
-    if (!account || !account.tokens) throw new Error("Account not connected or tokens missing");
+    if (!account || !account.tokens) {
+        throw new Error("Account not connected or tokens missing");
+    }
     const oauth2Client = oauth2ClientFactory();
     oauth2Client.setCredentials(account.tokens);
 
@@ -22,24 +23,21 @@ async function getDriveForAccount(account) {
     if (typeof oauth2Client.on === "function") {
         oauth2Client.on("tokens", async (tokens) => {
             try {
-                // merge tokens and save
-                const acc = await store.getAccount(account.id);
-                if (!acc) return;
-                acc.tokens = Object.assign({}, acc.tokens || {}, tokens);
-                await store.saveAccount(acc);
+                account.tokens = { ...account.tokens, ...tokens };
+                if (account.userId) {
+                    await store.updateAccountForUser(account.userId, account);
+                }
             } catch (e) {
-                // swallow errors to avoid breaking flow
                 console.error("Failed to persist refreshed tokens:", e);
             }
         });
     }
 
-    // Some versions: manually refresh if needed and persist
-    // (drive methods will refresh automatically when using oauth2Client.getAccessToken())
+    // Attempt manual refresh if supported
     try {
         await oauth2Client.getAccessToken();
     } catch (e) {
-        // ignore; token may still be valid or refresh may occur automatically on request
+        // ignore errors; token refresh may still happen lazily
     }
 
     const drive = google.drive({ version: "v3", auth: oauth2Client });
@@ -71,9 +69,15 @@ module.exports = {
         const oauth2 = google.oauth2({ auth: client, version: "v2" });
         const { data: profile } = await oauth2.userinfo.get();
 
+        let id = state;
+        try {
+            const parsed = JSON.parse(state);
+            id = parsed.csrf ?? id;
+        } catch {}
+
         // Build account object
         const account = {
-            id: state,
+            id,
             provider: "google",
             label: profile.email || profile.name || `google-${profile.id}`,
             profile,
@@ -82,7 +86,7 @@ module.exports = {
         };
 
         // Persist using store here (store.saveAccount called by route too for redundancy)
-        await store.saveAccount(account);
+        // await store.saveAccount(account);
         return account;
     },
 
