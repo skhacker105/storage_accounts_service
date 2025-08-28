@@ -1,60 +1,83 @@
 // MongoDB-backed account store using native driver
-const { MongoClient } = require('mongodb');
-const { DB_URI } = require('../config/env');
-const logger = require('../utils/logger');
+const { MongoClient } = require("mongodb");
+const { DB_URI } = require("../config/env");
+const logger = require("../utils/logger");
 
 let client = null;
 let db = null;
-let accountsColl = null;
+// let accountsColl = null;
+let usersColl = null;
 
 async function init() {
-  if (!DB_URI) {
-    throw new Error('DB_URI is not set for mongo store');
-  }
-  client = new MongoClient(DB_URI, { useUnifiedTopology: true });
-  await client.connect();
-  db = client.db(); // use DB from URI (or default)
-  accountsColl = db.collection('accounts');
-  // Ensure index on id
-  await accountsColl.createIndex({ id: 1 }, { unique: true });
-  logger.info('Mongo store initialized');
+    if (!DB_URI) throw new Error("DB_URI is not set for mongo store");
+
+    client = new MongoClient(DB_URI, { useUnifiedTopology: true });
+    await client.connect();
+    db = client.db();
+
+    usersColl = db.collection("users");
+
+    await usersColl.createIndex({ id: 1 }, { unique: true });
+    await usersColl.createIndex({ email: 1 }, { unique: true });
+
+    logger.info("Mongo store initialized");
 }
 
-async function listAccounts() {
-  return accountsColl.find({}).toArray();
+// ---------- USERS ----------
+async function createUser(user) {
+    await usersColl.insertOne({ ...user, accounts: [] });
+    return user;
 }
 
-async function getAccount(id) {
-  return accountsColl.findOne({ id });
+async function getUser(id) {
+    return usersColl.findOne({ id });
 }
 
-async function saveAccount(account) {
-  // Upsert by id
-  await accountsColl.updateOne(
-    { id: account.id },
-    { $set: account },
-    { upsert: true }
-  );
+async function getUserByEmail(email) {
+    return usersColl.findOne({ email });
 }
 
-async function deleteAccount(id) {
-  await accountsColl.deleteOne({ id });
+async function listUsers() {
+    return usersColl.find({}).toArray();
+}
+
+// ---------- ACCOUNTS ----------
+async function listAccounts(userId) {
+    const user = await getUser(userId);
+    return user ? user.accounts : [];
+}
+
+async function saveAccount(userId, account) {
+    await usersColl.updateOne(
+        { id: userId },
+        { $pull: { accounts: { id: account.id } } } // remove old
+    );
+    await usersColl.updateOne({ id: userId }, { $push: { accounts: account } });
+    return account;
+}
+
+async function deleteAccount(userId, accountId) {
+    await usersColl.updateOne({ id: userId }, { $pull: { accounts: { id: accountId } } });
+    return true;
 }
 
 async function restoreAll() {
-  return listAccounts();
+    return listUsers();
 }
 
 async function close() {
-  if (client) await client.close();
+    if (client) await client.close();
 }
 
 module.exports = {
   init,
+  createUser,
+  getUser,
+  getUserByEmail,
+  listUsers,
   listAccounts,
-  getAccount,
   saveAccount,
   deleteAccount,
   restoreAll,
-  close
+  close,
 };

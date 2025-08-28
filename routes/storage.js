@@ -3,9 +3,11 @@ const multer = require("multer");
 const store = require("../db");
 const { getProvider } = require("../storage");
 const stream = require("stream");
+const { authMiddleware } = require("../middleware/auth");
 
 const upload = multer({ storage: multer.memoryStorage() });
 const router = express.Router();
+router.use(authMiddleware);
 
 /**
  * Create file

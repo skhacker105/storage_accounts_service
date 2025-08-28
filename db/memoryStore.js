@@ -1,35 +1,57 @@
 // Simple in-memory account store
-let accounts = [];
+let users = []; // { id, email, password, accounts: [] }
 
 module.exports = {
-  async init() {
-    // no-op for memory
-    return;
-  },
+    async init() {
+        // no-op for memory
+        return;
+    },
 
-  async listAccounts() {
-    return accounts.slice();
-  },
+    // ---------- USERS ----------
+    async createUser(user) {
+        users.push({ ...user, accounts: [] });
+        return user;
+    },
 
-  async getAccount(id) {
-    return accounts.find(a => a.id === id) || null;
-  },
+    async getUser(id) {
+        return users.find((u) => u.id === id) || null;
+    },
 
-  async saveAccount(account) {
-    const idx = accounts.findIndex(a => a.id === account.id);
-    if (idx >= 0) accounts[idx] = account;
-    else accounts.push(account);
-    return;
-  },
+    async getUserByEmail(email) {
+        return users.find((u) => u.email === email) || null;
+    },
 
-  async deleteAccount(id) {
-    accounts = accounts.filter(a => a.id !== id);
-    return;
-  },
+    async listUsers() {
+        return users;
+    },
 
-  async restoreAll() {
-    // returns all accounts currently in memory (useful when server restarts
-    // with DB backing you would call DB to restore)
-    return accounts.slice();
-  }
+    // ---------- ACCOUNTS ----------
+    async listAccounts(userId) {
+        const user = users.find((u) => u.id === userId);
+        return user ? user.accounts : [];
+    },
+
+    async saveAccount(userId, account) {
+        console.log("current users = ", users);
+        console.log("current account = ", account);
+        console.log("current userId = ", userId);
+        const user = users.find((u) => u.id === userId);
+        if (!user) throw new Error("User not found");
+
+        const idx = user.accounts.findIndex((a) => a.id === account.id);
+        if (idx >= 0) user.accounts[idx] = account;
+        else user.accounts.push(account);
+        return account;
+    },
+
+    async deleteAccount(userId, accountId) {
+        const user = users.find((u) => u.id === userId);
+        if (!user) throw new Error("User not found");
+        user.accounts = user.accounts.filter((a) => a.id !== accountId);
+        return true;
+    },
+
+    async restoreAll() {
+        return users;
+    },
 };

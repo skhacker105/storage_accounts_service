@@ -2,6 +2,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const store = require("./db"); // resolves either memory or mongo store
 const { PORT, BASE_URL, DB_TYPE } = require("./config/env");
+const userRoutes = require("./routes/users");
 const accountRoutes = require("./routes/accounts");
 const storageRoutes = require("./routes/storage");
 const logger = require("./utils/logger");
@@ -18,6 +19,7 @@ const logger = require("./utils/logger");
         app.use(bodyParser.json());
 
         // Routes
+        app.use("/users", userRoutes);
         app.use("/accounts", accountRoutes);
         app.use("/storage", storageRoutes);
 

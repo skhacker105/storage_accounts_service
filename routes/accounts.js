@@ -3,24 +3,35 @@ const { v4: uuidv4 } = require("uuid");
 const store = require("../db");
 const { getProvider } = require("../storage");
 const logger = require("../utils/logger");
+const { authMiddleware } = require("../middleware/auth");
 
 const router = express.Router();
+// router.use(authMiddleware);
 
 /**
  * Redirect to OAuth consent of given provider
  * GET /accounts/add/:provider
  */
-router.get("/add/:provider", async (req, res) => {
+router.get("/add/:provider", authMiddleware, async (req, res) => {
     const providerName = req.params.provider;
     const provider = getProvider(providerName);
     if (!provider) return res.status(400).send(`Unknown provider: ${providerName}`);
 
-    const state = uuidv4();
+    console.log('\nreq.userId = ', req.userId)
+    const state = JSON.stringify({
+        csrf: uuidv4(),
+        userId: req.userId, // comes from authMiddleware
+    });
     const url = provider.getAuthUrl(state);
 
-    // Save placeholder account
-    const placeholder = { id: state, provider: providerName, status: "pending", createdAt: new Date().toISOString() };
-    await store.saveAccount(placeholder);
+    const placeholder = {
+        id: state,
+        userId: req.userId,
+        provider: providerName,
+        status: "pending",
+        createdAt: new Date().toISOString(),
+    };
+    await store.saveAccount(req.userId, placeholder);
 
     return res.redirect(url);
 });
@@ -32,27 +43,31 @@ router.get("/add/:provider", async (req, res) => {
  */
 router.get("/callback/:provider", async (req, res) => {
     try {
-        const providerName = req.params.provider;
-        const provider = getProvider(providerName);
-        if (!provider) return res.status(400).send(`Unknown provider: ${providerName}`);
-
-        const account = await provider.handleOAuthCallback(req.query);
-        // save account (upsert)
-        await store.saveAccount(account);
-
-        return res.send(`Account added: ${account.label} (id=${account.id}). You can close this window.`);
+      const provider = getProvider(req.params.provider);
+      if (!provider) return res.status(400).send("Unknown provider");
+  
+      // state comes from Google redirect
+    console.log('\nreq.query.state = ', req.query)
+      const stateObj = JSON.parse(req.query.state);
+      const userId = stateObj.userId;
+  
+      const account = await provider.handleOAuthCallback(req.query);
+      console.log('stateObj.userId = ', stateObj.userId, userId)
+      await store.saveAccount(stateObj.userId, account);
+  
+      return res.send(`Account added for user=${userId}, account=${account.label}`);
     } catch (e) {
-        logger.error("OAuth callback error", e);
-        return res.status(500).send("OAuth callback failed");
+      logger.error("OAuth callback error", e);
+      return res.status(500).send("OAuth callback failed");
     }
-});
+  });
 
 /**
  * List accounts
  * GET /accounts
  */
 router.get("/", async (req, res) => {
-    const accounts = await store.listAccounts();
+    const accounts = await store.listAccounts(req.userId);
     res.json(
         accounts.map((a) => ({
             id: a.id,
@@ -69,8 +84,7 @@ router.get("/", async (req, res) => {
  * DELETE /accounts/:id
  */
 router.delete("/:id", async (req, res) => {
-    const id = req.params.id;
-    await store.deleteAccount(id);
+    await store.deleteAccount(req.userId, req.params.id);
     res.json({ ok: true });
 });
 
