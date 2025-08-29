@@ -57,6 +57,10 @@ module.exports = {
         });
     },
 
+    isSameAccount(account1, account2) {
+        return account1.provider === account2.provider && account1.label === account2.label;
+    },
+
     // query contains code and state
     async handleOAuthCallback(query) {
         const { code, state } = query;

@@ -42,22 +42,22 @@ router.get("/add/:provider", authMiddleware, async (req, res) => {
  */
 router.get("/callback/:provider", async (req, res) => {
     try {
-      const provider = getProvider(req.params.provider);
-      if (!provider) return res.status(400).send("Unknown provider");
-  
-      // state comes from Google redirect
-      const stateObj = JSON.parse(req.query.state);
-      const userId = stateObj.userId;
-  
-      const account = await provider.handleOAuthCallback(req.query);
-      await store.saveAccount(userId, account);
-  
-      return res.send(`Account added for user=${userId}, account=${account.label} with account id = ${account.id}`);
+        const provider = getProvider(req.params.provider);
+        if (!provider) return res.status(400).send("Unknown provider");
+
+        // state comes from Google redirect
+        const stateObj = JSON.parse(req.query.state);
+        const userId = stateObj.userId;
+
+        const account = await provider.handleOAuthCallback(req.query);
+        await store.saveAccount(userId, account);
+
+        return res.send(`Account added for user=${userId}, account=${account.label} with account id = ${account.id}`);
     } catch (e) {
-      logger.error("OAuth callback error", e);
-      return res.status(500).send("OAuth callback failed");
+        logger.error("OAuth callback error", e);
+        return res.status(500).send("OAuth callback failed");
     }
-  });
+});
 
 /**
  * List accounts

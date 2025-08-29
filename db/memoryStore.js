@@ -1,3 +1,6 @@
+const { getProvider } = require("../storage");
+
+
 // Simple in-memory account store
 let users = []; // { id, email, password, accounts: [] }
 
@@ -52,7 +55,8 @@ module.exports = {
         const user = users.find((u) => u.id === userId);
         if (!user) throw new Error("User not found");
 
-        const idx = user.accounts.findIndex((a) => a.id === account.id);
+        const provider = getProvider(req.params.provider);
+        const idx = user.accounts.findIndex((a) => provider.isSameAccount(a, account));
         if (idx >= 0) user.accounts[idx] = account;
         else user.accounts.push({ ...account, userId });
         return account;
