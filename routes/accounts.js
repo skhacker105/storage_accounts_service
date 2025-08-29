@@ -17,11 +17,11 @@ router.get("/add/:provider", authMiddleware, async (req, res) => {
     const provider = getProvider(providerName);
     if (!provider) return res.status(400).send(`Unknown provider: ${providerName}`);
 
-    const state = JSON.stringify({
+    const state = {
         csrf: uuidv4(),
         userId: req.userId, // comes from authMiddleware
-    });
-    const url = provider.getAuthUrl(state);
+    };
+    const url = provider.getAuthUrl(JSON.stringify(state));
 
     const placeholder = {
         id: state.csrf,
