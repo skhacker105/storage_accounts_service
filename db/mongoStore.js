@@ -55,7 +55,7 @@ async function getAccount(userId, accountId) {
 async function saveAccount(userId, account) {
     await usersColl.updateOne(
         { id: userId },
-        { $pull: { accounts: { id: account.id } } } // remove old
+        { $pull: { accounts: { id: account.id, userId } } } // remove old
     );
     await usersColl.updateOne({ id: userId }, { $push: { accounts: { ...account, userId } } });
     return account;

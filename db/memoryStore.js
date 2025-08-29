@@ -55,7 +55,7 @@ module.exports = {
         const user = users.find((u) => u.id === userId);
         if (!user) throw new Error("User not found");
 
-        const provider = getProvider(req.params.provider);
+        const provider = getProvider(account.provider);
         const idx = user.accounts.findIndex((a) => provider.isSameAccount(a, account));
         if (idx >= 0) user.accounts[idx] = account;
         else user.accounts.push({ ...account, userId });
