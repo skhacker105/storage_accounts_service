@@ -1,5 +1,6 @@
 const express = require("express");
 const bodyParser = require("body-parser");
+const cors = require("cors");
 const store = require("./db"); // resolves either memory or mongo store
 const { PORT, BASE_URL, DB_TYPE } = require("./config/env");
 const userRoutes = require("./routes/users");
@@ -16,6 +17,16 @@ const logger = require("./utils/logger");
         }
 
         const app = express();
+
+        // CORS configuration using BASE_URL from env
+        app.use(
+            cors({
+                origin: '*',
+                methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+                allowedHeaders: ["Content-Type", "Authorization"],
+            })
+        );
+
         app.use(bodyParser.json());
 
         // Routes
