@@ -63,7 +63,7 @@ router.get("/callback/:provider", async (req, res) => {
  * List accounts
  * GET /accounts
  */
-router.get("/", async (req, res) => {
+router.get("/", authMiddleware, async (req, res) => {
     const accounts = await store.listAccounts(req.userId);
     res.json(
         accounts.map((a) => ({
@@ -80,7 +80,7 @@ router.get("/", async (req, res) => {
  * Delete account
  * DELETE /accounts/:id
  */
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", authMiddleware, async (req, res) => {
     await store.deleteAccount(req.userId, req.params.id);
     res.json({ ok: true });
 });
