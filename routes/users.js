@@ -10,16 +10,18 @@ const router = express.Router();
  * Register
  */
 router.post("/register", async (req, res) => {
-    const { email, password } = req.body;
-    if (!email || !password) return res.status(400).send("Email and password required");
+    const { email, phoneNumber, password } = req.body;
+    if ((!email || !phoneNumber) || !password) return res.status(400).send("Email and password required");
 
-    const existing = await store.getUserByEmail(email);
-    if (existing) return res.status(400).send("Email already exists");
+    const existingPhone = await store.getUserByPhoneNumber(phoneNumber);
+    const existingEmail = await store.getUserByEmail(email);
+    if (existingPhone) return res.status(400).send("Phone number already exists");
+    if (existingEmail) return res.status(400).send("Email already exists");
 
-    const user = { id: uuidv4(), email, password }; // ⚠️ hash in prod
+    const user = { ...req.body, id: uuidv4(), email, password }; // ⚠️ hash in prod
     await store.createUser(user);
 
-    res.json({ id: user.id, email: user.email });
+    res.json({ ...user });
 });
 
 /**
@@ -27,7 +29,8 @@ router.post("/register", async (req, res) => {
  */
 router.post("/login", async (req, res) => {
     const { email, password } = req.body;
-    const user = await store.getUserByEmail(email);
+    let user = await store.getUserByEmail(email);
+    if (!user) user = await store.getUserByPhoneNumber(email)
 
     if (!user || user.password !== password) {
         return res.status(401).send("Invalid email or password");

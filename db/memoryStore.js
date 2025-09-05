@@ -24,6 +24,10 @@ module.exports = {
         return users.find((u) => u.email === email) || null;
     },
 
+    async getUserByPhoneNumber(phoneNumber) {
+        return users.find((u) => u.phoneNumber === phoneNumber) || null;
+    },
+
     async listUsers() {
         return users;
     },

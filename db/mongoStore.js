@@ -36,6 +36,10 @@ async function getUserByEmail(email) {
     return usersColl.findOne({ email });
 }
 
+async function getUserByPhoneNumber(phoneNumber) {
+    return usersColl.findOne({phoneNumber});
+}
+
 async function listUsers() {
     return usersColl.find({}).toArray();
 }
@@ -87,6 +91,7 @@ module.exports = {
   createUser,
   getUser,
   getUserByEmail,
+  getUserByPhoneNumber,
   listUsers,
   listAccounts,
   saveAccount,
