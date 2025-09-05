@@ -11,7 +11,7 @@ const router = express.Router();
  */
 router.post("/register", async (req, res) => {
     const { email, phoneNumber, password } = req.body;
-    if ((!email || !phoneNumber) || !password) return res.status(400).send("Email and password required");
+    if (!email || !phoneNumber || !password) return res.status(400).send("Email and password required");
 
     const existingPhone = await store.getUserByPhoneNumber(phoneNumber);
     const existingEmail = await store.getUserByEmail(email);
@@ -30,7 +30,7 @@ router.post("/register", async (req, res) => {
 router.post("/login", async (req, res) => {
     const { email, password } = req.body;
     let user = await store.getUserByEmail(email);
-    if (!user) user = await store.getUserByPhoneNumber(email)
+    if (!user) user = await store.getUserByPhoneNumber(email);
 
     if (!user || user.password !== password) {
         return res.status(401).send("Invalid email or password");
@@ -55,7 +55,7 @@ router.get("/", async (req, res) => {
 router.get("/myInfo", authMiddleware, async (req, res) => {
     const userId = req.userId;
     const user = await store.getUser(userId);
-    res.json(user);
+    res.json({ ...user, password: "" });
 });
 
 module.exports = router;
