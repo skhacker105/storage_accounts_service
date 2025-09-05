@@ -12,7 +12,7 @@ module.exports = {
 
     // ---------- USERS ----------
     async createUser(user) {
-        users.push({ ...user, accounts: [] });
+        users.push({ ...user, storageAccounts: [] });
         return user;
     },
 
@@ -35,24 +35,24 @@ module.exports = {
     // ---------- ACCOUNTS ----------
     async listAccounts(userId) {
         const user = users.find((u) => u.id === userId);
-        return user ? user.accounts : [];
+        return user ? user.storageAccounts : [];
     },
 
     async updateAccountForUser(userId, account) {
         const user = users.find((u) => u.id === userId);
         if (!user) throw new Error("User not found");
-        const idx = user.accounts.findIndex((a) => a.id === account.id);
+        const idx = user.storageAccounts.findIndex((a) => a.id === account.id);
         if (idx >= 0) {
-            user.accounts[idx] = { ...account, userId };
+            user.storageAccounts[idx] = { ...account, userId };
         } else {
-            user.accounts.push({ ...account, userId });
+            user.storageAccounts.push({ ...account, userId });
         }
     },
 
     async getAccount(userId, accountId) {
         const user = users.find((u) => u.id === userId);
         if (!user) return null;
-        return user.accounts.find((a) => a.id === accountId) || null;
+        return user.storageAccounts.find((a) => a.id === accountId) || null;
     },
 
     async saveAccount(userId, account) {
@@ -60,16 +60,16 @@ module.exports = {
         if (!user) throw new Error("User not found");
 
         const provider = getProvider(account.provider);
-        const idx = user.accounts.findIndex((a) => provider.isSameAccount(a, account));
-        if (idx >= 0) user.accounts[idx] = account;
-        else user.accounts.push({ ...account, userId });
+        const idx = user.storageAccounts.findIndex((a) => provider.isSameAccount(a, account));
+        if (idx >= 0) user.storageAccounts[idx] = account;
+        else user.storageAccounts.push({ ...account, userId });
         return account;
     },
 
     async deleteAccount(userId, accountId) {
         const user = users.find((u) => u.id === userId);
         if (!user) throw new Error("User not found");
-        user.accounts = user.accounts.filter((a) => a.id !== accountId);
+        user.storageAccounts = user.storageAccounts.filter((a) => a.id !== accountId);
         return true;
     },
 

@@ -59,22 +59,22 @@ async function getAccount(userId, accountId) {
 async function saveAccount(userId, account) {
     await usersColl.updateOne(
         { id: userId },
-        { $pull: { accounts: { id: account.id, userId } } } // remove old
+        { $pull: { storageAccounts: { id: account.id, userId } } } // remove old
     );
-    await usersColl.updateOne({ id: userId }, { $push: { accounts: { ...account, userId } } });
+    await usersColl.updateOne({ id: userId }, { $push: { storageAccounts: { ...account, userId } } });
     return account;
 }
 
 async function updateAccountForUser(userId, account) {
     await usersColl.updateOne(
-      { id: userId, "accounts.id": account.id },
-      { $set: { "accounts.$": { ...account, userId } } },
+      { id: userId, "storageAccounts.id": account.id },
+      { $set: { "storageAccounts.$": { ...account, userId } } },
       { upsert: true }
     );
 }
 
 async function deleteAccount(userId, accountId) {
-    await usersColl.updateOne({ id: userId }, { $pull: { accounts: { id: accountId } } });
+    await usersColl.updateOne({ id: userId }, { $pull: { storageAccounts: { id: accountId } } });
     return true;
 }
 
