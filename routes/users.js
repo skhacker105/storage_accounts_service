@@ -55,6 +55,13 @@ router.get("/", async (req, res) => {
 router.get("/myInfo", authMiddleware, async (req, res) => {
     const userId = req.userId;
     const user = await store.getUser(userId);
+    user.storageAccounts = user.storageAccounts.map(acc => ({
+        id: acc.id,
+        provider: acc.provider,
+        label: acc.label,
+        createdAt: acc.createdAt,
+        userId: acc.userId
+    }))
     res.json({ ...user, password: "" });
 });
 

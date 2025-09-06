@@ -52,7 +52,30 @@ router.get("/callback/:provider", async (req, res) => {
         const account = await provider.handleOAuthCallback(req.query);
         await store.saveAccount(userId, account);
 
-        return res.send(`Account added for user=${userId}, account=${account.label} with account id = ${account.id}`);
+        const responseObject = {
+            status: "success",
+            userId: userId,
+            account: account.id,
+            timestamp: new Date().toISOString()
+        };
+
+        return res.send(`
+            <!DOCTYPE html>
+            <html>
+            <body>
+                <script>
+                    if (window.opener) {
+                        window.opener.postMessage(${JSON.stringify(responseObject)}, '*');
+                        window.close();
+                    } else {
+                        document.body.innerText = 'Account added successfully, but no opener window found. You can close this window.';
+                    }
+                </script>
+            </body>
+            </html>
+        `);
+
+        // return res.send(`Account added for user=${userId}, account=${account.label} with account id = ${account.id}`);
     } catch (e) {
         logger.error("OAuth callback error", e);
         return res.status(500).send("OAuth callback failed");

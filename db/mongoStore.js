@@ -47,13 +47,13 @@ async function listUsers() {
 // ---------- ACCOUNTS ----------
 async function listAccounts(userId) {
     const user = await getUser(userId);
-    return user ? user.accounts : [];
+    return user ? user.storageAccounts : [];
 }
 
 async function getAccount(userId, accountId) {
     const user = await getUser(userId);
     if (!user) return null;
-    return user.accounts.find((a) => a.id === accountId) || null;
+    return user.storageAccounts.find((a) => a.id === accountId) || null;
 }
 
 async function saveAccount(userId, account) {
