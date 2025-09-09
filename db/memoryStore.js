@@ -32,6 +32,19 @@ module.exports = {
         return users;
     },
 
+    async updateUser(id, updates) {
+        const userIndex = users.findIndex((u) => u.id === id);
+        if (userIndex === -1) throw new Error("User not found");
+
+        // Preserve storageAccounts if not explicitly updated
+        users[userIndex] = { 
+            ...users[userIndex], 
+            ...updates, 
+            storageAccounts: users[userIndex].storageAccounts 
+        };
+        return users[userIndex];
+    },
+
     // ---------- ACCOUNTS ----------
     async listAccounts(userId) {
         const user = users.find((u) => u.id === userId);

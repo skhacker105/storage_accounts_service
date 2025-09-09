@@ -44,6 +44,17 @@ async function listUsers() {
     return usersColl.find({}).toArray();
 }
 
+async function updateUser(id, updates) {
+    const result = await usersColl.findOneAndUpdate(
+        { id },
+        { $set: updates },
+        { returnDocument: "after" }
+    );
+
+    if (!result) throw new Error("User not found");
+    return result;
+}
+
 // ---------- ACCOUNTS ----------
 async function listAccounts(userId) {
     const user = await getUser(userId);
@@ -93,6 +104,7 @@ module.exports = {
   getUserByEmail,
   getUserByPhoneNumber,
   listUsers,
+  updateUser,
   listAccounts,
   saveAccount,
   deleteAccount,

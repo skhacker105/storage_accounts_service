@@ -55,14 +55,46 @@ router.get("/", async (req, res) => {
 router.get("/myInfo", authMiddleware, async (req, res) => {
     const userId = req.userId;
     const user = await store.getUser(userId);
-    user.storageAccounts = user.storageAccounts.map(acc => ({
+    user.storageAccounts = user.storageAccounts.map((acc) => ({
         id: acc.id,
         provider: acc.provider,
         label: acc.label,
         createdAt: acc.createdAt,
-        userId: acc.userId
-    }))
+        userId: acc.userId,
+    }));
     res.json({ ...user, password: "" });
+});
+
+/**
+ * Update user
+ */
+router.put("/update", authMiddleware, async (req, res) => {
+    try {
+        const userId = req.userId;
+        const updates = req.body;
+
+        // Prevent dangerous updates
+        delete updates._id;
+        delete updates.id;
+        delete updates.password;
+        delete updates.storageAccounts;
+
+        const updatedUser = await store.updateUser(userId, updates);
+
+        // Hide sensitive info
+        updatedUser.storageAccounts = updatedUser.storageAccounts.map((acc) => ({
+            id: acc.id,
+            provider: acc.provider,
+            label: acc.label,
+            createdAt: acc.createdAt,
+            userId: acc.userId,
+        }));
+        updatedUser.password = "";
+
+        res.json(updatedUser);
+    } catch (err) {
+        res.status(400).send(err.message || "Failed to update user");
+    }
 });
 
 module.exports = router;
