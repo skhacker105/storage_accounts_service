@@ -73,15 +73,18 @@ router.get("/:accountId/files/:fileId", async (req, res) => {
         if (!provider) return res.status(400).json({ error: "Provider not supported" });
 
         if (req.query.alt === "media") {
-            const fileStream = await provider.getFile(account, req.params.fileId, { alt: "media" });
-            fileStream.on("error", (err) => {
-                console.error(err);
-                res.status(500).end();
+            // Fetch file metadata to get MIME type and filename
+            const meta = await provider.getFile(account, req.params.fileId, {});
+            const fileBuffer = await provider.getFile(account, req.params.fileId, { alt: "media" });
+
+            res.set({
+                'Content-Type': meta.mimeType,
+                'Content-Disposition': `attachment; filename="${meta.name}"`
             });
-            fileStream.pipe(res);
+            res.send(fileBuffer); // Send Buffer directly
         } else {
             const meta = await provider.getFile(account, req.params.fileId, {});
-            res.json(meta);
+            res.json(meta); // Return metadata as JSON
         }
     } catch (e) {
         console.error(e);

@@ -131,7 +131,19 @@ module.exports = {
         const { alt } = options;
         if (alt === "media") {
             const resp = await drive.files.get({ fileId, alt: "media" }, { responseType: "stream" });
-            return resp.data; // stream
+            return new Promise((resolve, reject) => {
+                const chunks = [];
+                resp.data
+                    .on("data", (chunk) => chunks.push(chunk))
+                    .on("end", () => {
+                        const buffer = Buffer.concat(chunks);
+                        resolve(buffer); // Return Buffer for Angular to handle
+                    })
+                    .on("error", (err) => {
+                        console.error("Error streaming file data:", err);
+                        reject(err);
+                    });
+            });
         } else {
             const resp = await drive.files.get({ fileId, fields: "id,name,mimeType,size,modifiedTime" });
             return resp.data;
