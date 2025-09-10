@@ -11,10 +11,10 @@ const router = express.Router();
  */
 router.post("/register", async (req, res) => {
     const { email, phoneNumber, password } = req.body;
-    if (!email || !phoneNumber || !password) return res.status(400).send("Email and password required");
+    if (!phoneNumber || !password) return res.status(400).send("Email and password required");
 
     const existingPhone = await store.getUserByPhoneNumber(phoneNumber);
-    const existingEmail = await store.getUserByEmail(email);
+    const existingEmail = email ? await store.getUserByEmail(email) : undefined;
     if (existingPhone) return res.status(400).send("Phone number already exists");
     if (existingEmail) return res.status(400).send("Email already exists");
 
